@@ -23,10 +23,11 @@ parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rat
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
+parser.add_argument("--latent_dim", type=int, default=100,
+                    help="dimensionality of the latent space")  # 这个指的应该是输入生成器的噪声的维度
 parser.add_argument("--img_size", type=int, default=28, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
+parser.add_argument("--sample_interval", type=int, default=400, help="interval between image samples")
 opt = parser.parse_args()
 print(opt)
 
@@ -42,7 +43,7 @@ class Generator(nn.Module):
         def block(in_feat, out_feat, normalize=True):
             layers = [nn.Linear(in_feat, out_feat)]
             if normalize:
-                layers.append(nn.BatchNorm1d(out_feat, 0.8))
+                layers.append(nn.BatchNorm1d(out_feat, 0.8)) # 0.8是eps参数，加在分母中防止除0
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             return layers
 
@@ -51,7 +52,7 @@ class Generator(nn.Module):
             *block(128, 256),
             *block(256, 512),
             *block(512, 1024),
-            nn.Linear(1024, int(np.prod(img_shape))),
+            nn.Linear(1024, int(np.prod(img_shape))), # TODO
             nn.Tanh()
         )
 
