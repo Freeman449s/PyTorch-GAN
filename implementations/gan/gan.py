@@ -43,7 +43,7 @@ class Generator(nn.Module):
         def block(in_feat, out_feat, normalize=True):
             layers = [nn.Linear(in_feat, out_feat)]
             if normalize:
-                layers.append(nn.BatchNorm1d(out_feat, 0.8)) # 0.8是eps参数，加在分母中防止除0
+                layers.append(nn.BatchNorm1d(out_feat, 0.8))  # 0.8是eps参数，加在分母中防止除0
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             return layers
 
@@ -52,12 +52,16 @@ class Generator(nn.Module):
             *block(128, 256),
             *block(256, 512),
             *block(512, 1024),
-            nn.Linear(1024, int(np.prod(img_shape))), # TODO
+            nn.Linear(1024, int(np.prod(img_shape))),  # np.prod计算传入阵列中的元素的积
             nn.Tanh()
         )
 
-    def forward(self, z):
-        img = self.model(z)
+    def forward(self, z: torch.Tensor):
+        """
+        前向传播
+        :param z: 噪声信号
+        """
+        img: torch.Tensor = self.model(z)
         img = img.view(img.size(0), *img_shape)
         return img
 
@@ -76,21 +80,21 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, img):
-        img_flat = img.view(img.size(0), -1)
+        img_flat = img.view(img.size(0), -1)  # view不会新建Tensor
         validity = self.model(img_flat)
 
         return validity
 
 
 # Loss function
-adversarial_loss = torch.nn.BCELoss()
+adversarial_loss = torch.nn.BCELoss()  # TODO
 
 # Initialize generator and discriminator
 generator = Generator()
 discriminator = Discriminator()
 
 if cuda:
-    generator.cuda()
+    generator.cuda()  # 返回Tensor在CUDA内存上的拷贝
     discriminator.cuda()
     adversarial_loss.cuda()
 
@@ -115,11 +119,11 @@ optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt
 
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
-# ----------
+# ------------------------------
 #  Training
-# ----------
+# ------------------------------
 
-for epoch in range(opt.n_epochs):
+for epoch in range(opt.n_epochs): # TODO
     for i, (imgs, _) in enumerate(dataloader):
 
         # Adversarial ground truths
