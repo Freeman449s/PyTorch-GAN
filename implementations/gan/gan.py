@@ -87,7 +87,7 @@ class Discriminator(nn.Module):
 
 
 # Loss function
-adversarial_loss = torch.nn.BCELoss()  # TODO
+adversarial_loss = torch.nn.BCELoss()  # 二元交叉熵函数y·ln(x) + (1-y)·ln(1-x)，其中y等于0或1。x与y越接近，损失越小。
 
 # Initialize generator and discriminator
 generator = Generator()
@@ -123,15 +123,16 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 #  Training
 # ------------------------------
 
-for epoch in range(opt.n_epochs): # TODO
-    for i, (imgs, _) in enumerate(dataloader):
+for epoch in range(opt.n_epochs):
+    for i, (imgs, _) in enumerate(dataloader):  # _应该是标签，这里用不到
 
         # Adversarial ground truths
-        valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
-        fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
+        valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0),
+                         requires_grad=False)  # batchSize * 1, val = 1. Variable是弃用的API，最初被用于自动计算梯度
+        fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)  # batchSize * 1, val = 0
 
         # Configure input
-        real_imgs = Variable(imgs.type(Tensor))
+        real_imgs = Variable(imgs.type(Tensor))  # Tensor.type(dtype)将Tensor转为指定类型
 
         # -----------------
         #  Train Generator
@@ -146,7 +147,7 @@ for epoch in range(opt.n_epochs): # TODO
         gen_imgs = generator(z)
 
         # Loss measures generator's ability to fool the discriminator
-        g_loss = adversarial_loss(discriminator(gen_imgs), valid)
+        g_loss = adversarial_loss(discriminator(gen_imgs), valid)  # min -log(D(G(z))) == max log(D(G(z)))
 
         g_loss.backward()
         optimizer_G.step()
@@ -159,8 +160,9 @@ for epoch in range(opt.n_epochs): # TODO
 
         # Measure discriminator's ability to classify real from generated samples
         real_loss = adversarial_loss(discriminator(real_imgs), valid)
-        fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
-        d_loss = (real_loss + fake_loss) / 2
+        fake_loss = adversarial_loss(
+            discriminator(gen_imgs.detach()), fake)  # detach()方法返回Tensor的浅拷贝，该Tensor是从计算图上分离的，不会计算梯度。分离的目的是阻止梯度向生成器传播
+        d_loss = (real_loss + fake_loss) / 2  # max 0.5*log(D(x))+0.5*log(1-D(G(z)))
 
         d_loss.backward()
         optimizer_D.step()
@@ -172,4 +174,7 @@ for epoch in range(opt.n_epochs): # TODO
 
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)  # 会调用make_grid生成图片网格
+
+# TODO 使用论文中提出的训练算法（每更新k轮D时，更新1轮G）
+# TODO 保存模型权重
